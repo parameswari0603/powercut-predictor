@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>PowerCut Heatmap</title>
+    <link rel="stylesheet" href=
+            "https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet"
+          href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <style>
+        body { background:#0d0d1a; color:#fff; }
+        #map { height:500px; border-radius:12px; }
+        .legend { background:#1a1a2e;
+            padding:10px;
+            border-radius:8px; }
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-dark"
+     style="background:#111;">
+    <div class="container">
+        <a href="/" class="navbar-brand fw-bold">
+            ⚡ PowerCut Predictor
+        </a>
+        <div>
+            <a href="/report"
+               class="btn btn-warning btn-sm me-2">
+                Report Outage
+            </a>
+            <a href="/patterns"
+               class="btn btn-outline-light btn-sm">
+                View Patterns
+            </a>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <h2 style="color:#f5c518;">
+        ⚡ Live Risk Heatmap — Chennai
+    </h2>
+    <p class="text-muted">
+        Auto-refreshes every 5 minutes.
+        Circle color shows current risk level.
+    </p>
+
+    <!-- Legend -->
+    <div class="legend d-flex gap-3 mb-3">
+        <span>🟢 Low</span>
+        <span>🟡 Medium</span>
+        <span>🟠 High</span>
+        <span>🔴 Very High</span>
+    </div>
+
+    <!-- Map -->
+    <div id="map"></div>
+
+    <!-- Area Cards below map -->
+    <div class="row g-3 mt-4" id="areaCards"></div>
+</div>
+
+<script src=
+                "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+</script>
+<script>
+    // Initialize map centered on Chennai
+    const map = L.map('map').setView(
+        [13.0827, 80.2707], 11);
+
+    L.tileLayer(
+        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        { attribution: '© OpenStreetMap' }
+    ).addTo(map);
+
+    // Color based on risk level
+    function getRiskColor(risk) {
+        if (risk === 'VERY_HIGH') return '#dc3545';
+        if (risk === 'HIGH')      return '#fd7e14';
+        if (risk === 'MEDIUM')    return '#ffc107';
+        return '#28a745';
+    }
+
+    // Load risk data and show on map
+    function loadRiskData() {
+        fetch('/api/prediction/all/risk-summary')
+            .then(res => res.json())
+            .then(data => {
+                // Clear existing markers
+                map.eachLayer(layer => {
+                    if (layer instanceof L.CircleMarker) {
+                        map.removeLayer(layer);
+                    }
+                });
+
+                const cardsContainer =
+                    document.getElementById('areaCards');
+                cardsContainer.innerHTML = '';
+
+                data.forEach(area => {
+                    const color =
+                        getRiskColor(area.riskLevel);
+
+                    // Add circle to map
+                    L.circleMarker(
+                        [area.latitude, area.longitude],
+                        {
+                            radius: 30,
+                            fillColor: color,
+                            color: color,
+                            fillOpacity: 0.6,
+                            weight: 2
+                        }
+                    )
+                        .bindPopup(`
+            <b>${area.areaName}</b><br>
+            Risk: ${area.riskLevel}<br>
+            Score: ${area.riskScore}%
+          `)
+                        .addTo(map);
+
+                    // Add area card below map
+                    cardsContainer.innerHTML += `
+            <div class="col-md-4">
+              <div class="card p-3"
+                   style="background:#1a1a2e;
+                          border:2px solid ${color};
+                          color:#fff;">
+                <h6>${area.areaName}</h6>
+                <span class="badge"
+                  style="background:${color};">
+                  ${area.riskLevel}
+                </span>
+                <p class="mt-2 mb-0 small">
+                  Risk Score: ${area.riskScore}%
+                </p>
+                <a href="/predict?area=${area.areaName}"
+                   class="btn btn-sm mt-2"
+                   style="border-color:${color};
+                          color:${color};">
+                  View Details
+                </a>
+              </div>
+            </div>
+          `;
+                });
+            })
+            .catch(err => console.error(
+                'Error loading risk data:', err));
+    }
+
+    // Load immediately
+    loadRiskData();
+
+    // Refresh every 5 minutes
+    setInterval(loadRiskData, 5 * 60 * 1000);
+</script>
+</body>
+</html>

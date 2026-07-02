@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Outage Patterns</title>
+    <link rel="stylesheet" href=
+            "https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <script src=
+                    "https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { background:#0d0d1a; color:#fff; }
+        .card { background:#1a1a2e;
+            border:1px solid #333; color:#fff; }
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-dark"
+     style="background:#111;">
+    <div class="container">
+        <a href="/" class="navbar-brand fw-bold">
+            ⚡ PowerCut Predictor
+        </a>
+        <a href="/heatmap"
+           class="btn btn-outline-light btn-sm">
+            View Heatmap
+        </a>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <h2 style="color:#f5c518;">
+        📊 Outage Patterns
+    </h2>
+
+    <!-- Area selector -->
+    <div class="card p-3 mb-4">
+        <form id="areaForm" class="d-flex gap-2">
+            <input type="text" id="areaInput"
+                   class="form-control"
+                   placeholder="Enter area name"
+                   value="Anna Nagar"
+                   style="background:#0d0d1a;
+                    color:#fff;
+                    border-color:#444;">
+            <button type="submit"
+                    class="btn btn-warning px-4">
+                Analyse
+            </button>
+        </form>
+    </div>
+
+    <div id="chartsSection"
+         style="display:none;">
+
+        <div class="row g-4">
+
+            <!-- Chart 1: By Hour -->
+            <div class="col-md-6">
+                <div class="card p-3">
+                    <h6 style="color:#f5c518;">
+                        Outages by Hour of Day
+                    </h6>
+                    <canvas id="hourChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Chart 2: Weekday vs Weekend -->
+            <div class="col-md-6">
+                <div class="card p-3">
+                    <h6 style="color:#f5c518;">
+                        Weekday vs Weekend
+                    </h6>
+                    <canvas id="dayChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Chart 3: By Temperature -->
+            <div class="col-md-6">
+                <div class="card p-3">
+                    <h6 style="color:#f5c518;">
+                        Outages by Temperature Range
+                    </h6>
+                    <canvas id="tempChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Stats card -->
+            <div class="col-md-6">
+                <div class="card p-3">
+                    <h6 style="color:#f5c518;">
+                        Summary
+                    </h6>
+                    <div id="statsBox"></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    let hourChartInstance = null;
+    let dayChartInstance  = null;
+    let tempChartInstance = null;
+
+    document.getElementById('areaForm')
+        .addEventListener('submit', function(e) {
+            e.preventDefault();
+            const area =
+                document.getElementById('areaInput').value;
+            loadPatterns(area);
+        });
+
+    function loadPatterns(area) {
+        fetch('/api/prediction/patterns/' + area)
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('chartsSection')
+                    .style.display = 'block';
+
+                // Chart 1: By Hour
+                const hourLabels =
+                    Object.keys(data.byHour)
+                        .sort((a,b) => a-b)
+                        .map(h => h + ':00');
+                const hourData =
+                    Object.keys(data.byHour)
+                        .sort((a,b) => a-b)
+                        .map(h => data.byHour[h]);
+
+                if (hourChartInstance)
+                    hourChartInstance.destroy();
+                hourChartInstance = new Chart(
+                    document.getElementById('hourChart'),
+                    {
+                        type: 'bar',
+                        data: {
+                            labels: hourLabels,
+                            datasets: [{
+                                label: 'Outages',
+                                data: hourData,
+                                backgroundColor: '#f5c518'
+                            }]
+                        },
+                        options: {
+                            plugins: {
+                                legend: { display: false }
+                            },
+                            scales: {
+                                x: { ticks: { color: '#fff' },
+                                    grid: { color: '#333' } },
+                                y: { ticks: { color: '#fff' },
+                                    grid: { color: '#333' } }
+                            }
+                        }
+                    }
+                );
+
+                // Chart 2: Day type
+                if (dayChartInstance)
+                    dayChartInstance.destroy();
+                dayChartInstance = new Chart(
+                    document.getElementById('dayChart'),
+                    {
+                        type: 'doughnut',
+                        data: {
+                            labels: Object.keys(data.byDayType),
+                            datasets: [{
+                                data: Object.values(data.byDayType),
+                                backgroundColor:
+                                    ['#f5c518', '#dc3545']
+                            }]
+                        },
+                        options: {
+                            plugins: {
+                                legend: {
+                                    labels: { color: '#fff' }
+                                }
+                            }
+                        }
+                    }
+                );
+
+                // Chart 3: Temperature
+                if (tempChartInstance)
+                    tempChartInstance.destroy();
+                tempChartInstance = new Chart(
+                    document.getElementById('tempChart'),
+                    {
+                        type: 'bar',
+                        data: {
+                            labels: Object.keys(data.byTempRange),
+                            datasets: [{
+                                label: 'Outages',
+                                data: Object.values(data.byTempRange),
+                                backgroundColor: '#fd7e14'
+                            }]
+                        },
+                        options: {
+                            plugins: {
+                                legend: { display: false }
+                            },
+                            scales: {
+                                x: { ticks: { color: '#fff' },
+                                    grid: { color: '#333' } },
+                                y: { ticks: { color: '#fff' },
+                                    grid: { color: '#333' } }
+                            }
+                        }
+                    }
+                );
+
+                // Stats box
+                document.getElementById('statsBox')
+                    .innerHTML = `
+          <p>📍 Area: <b>${data.area}</b></p>
+          <p>📋 Total Reports:
+            <b>${data.totalReports}</b></p>
+          <p>⏰ Peak Hour:
+            <b>${getPeakHour(data.byHour)}</b></p>
+          <p>📅 Riskiest Day Type:
+            <b>${getPeakDay(data.byDayType)}</b></p>
+        `;
+            });
+    }
+
+    function getPeakHour(byHour) {
+        return Object.entries(byHour)
+            .sort((a,b) => b[1] - a[1])[0][0] + ':00';
+    }
+
+    function getPeakDay(byDayType) {
+        return Object.entries(byDayType)
+            .sort((a,b) => b[1] - a[1])[0][0];
+    }
+
+    // Load default area on page open
+    loadPatterns('Anna Nagar');
+</script>
+</body>
+</html>

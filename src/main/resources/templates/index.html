@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>PowerCut Predictor</title>
+    <link rel="stylesheet" href=
+            "https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        body { background:#0d0d1a; color:#fff; }
+        .card { background:#1a1a2e;
+            border:1px solid #333; color:#fff; }
+        h1 { color:#f5c518; }
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-dark"
+     style="background:#111;">
+    <div class="container">
+    <span class="navbar-brand fw-bold">
+      ⚡ PowerCut Predictor
+    </span>
+        <a href="/report"
+           class="btn btn-warning btn-sm">
+            Report an Outage
+        </a>
+    </div>
+</nav>
+
+<div class="container mt-5">
+    <div class="text-center mb-5">
+        <h1>Know Before the Lights Go Out</h1>
+        <p class="text-muted">
+            Community-powered predictions for Chennai
+        </p>
+    </div>
+
+    <div class="card p-4 mb-4">
+        <h5>Check prediction for your area</h5>
+        <form action="/predict" method="get"
+              class="d-flex gap-2 mt-3">
+            <input type="text" name="area"
+                   class="form-control"
+                   placeholder="Enter area (e.g. Anna Nagar)"
+                   required>
+            <button type="submit"
+                    class="btn btn-warning px-4">
+                Predict
+            </button>
+        </form>
+    </div>
+
+    <div th:if="${error}"
+         class="alert alert-danger"
+         th:text="${error}">
+    </div>
+
+    <div th:if="${prediction}" class="card p-4 mb-4">
+        <h5>Prediction for
+            <span th:text="${prediction.area}"></span>
+        </h5>
+        <p class="mt-2"
+           th:text="${prediction.riskLevel
+       + ' - ' + prediction.riskScore + '% risk'}">
+        </p>
+        <p th:text="${prediction.reason}"></p>
+        <small class="text-muted">
+            Temp:
+            <span th:text="${prediction.currentTemperature}">
+      </span>C |
+            Reports analysed:
+            <span th:text="${prediction.totalReportsAnalyzed}">
+      </span>
+        </small>
+    </div>
+
+    <h5 class="mb-3">Tracked Areas</h5>
+    <div class="row g-3">
+        <div class="col-md-4"
+             th:each="area : ${areas}">
+            <div class="card p-3">
+                <h6 th:text="${area.name}"></h6>
+                <small class="text-muted"
+                       th:text="${area.city}">
+                </small>
+                <a th:href="@{/predict(area=${area.name})}"
+                   class="btn btn-sm btn-outline-warning mt-2">
+                    Check Prediction
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
