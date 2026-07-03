@@ -82,12 +82,20 @@ public class WebController {
         }
         return "report-form";
     }
+
     @GetMapping("/heatmap")
     public String heatmap() {
         return "heatmap";
     }
+
     @GetMapping("/patterns")
     public String patterns() {
         return "patterns";
+    }
+
+    @GetMapping("/admin")
+    public String admin(Model model) {
+        // admin dashboard logic
+        return "admin";
     }
 }

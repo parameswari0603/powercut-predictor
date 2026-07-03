@@ -10,16 +10,20 @@
         .card { background:#1a1a2e;
             border:1px solid #333; color:#fff; }
         .form-control {
-            background:#0d0d1a;
-            color:#fff;
+            background:#0d0d1a; color:#fff;
             border-color:#444;
         }
+        .nav-link { color:#ccc !important; }
+        .nav-link:hover { color:#f5c518 !important; }
     </style>
 </head>
 <body>
+
+<!-- Shared Navbar -->
+<div th:replace="~{navbar :: navbar}"></div>
+
 <div class="container mt-5"
      style="max-width:600px">
-    <a href="/" class="text-warning">← Back</a>
     <h2 class="my-4">⚡ Report a Power Cut</h2>
 
     <div th:if="${success}"
@@ -63,5 +67,9 @@
         </form>
     </div>
 </div>
+
+<script src=
+                "https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js">
+</script>
 </body>
 </html>
