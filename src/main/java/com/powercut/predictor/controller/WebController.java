@@ -93,9 +93,5 @@ public class WebController {
         return "patterns";
     }
 
-    @GetMapping("/admin")
-    public String admin(Model model) {
-        // admin dashboard logic
-        return "admin";
-    }
+
 }
